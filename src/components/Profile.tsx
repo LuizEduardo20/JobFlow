@@ -68,7 +68,7 @@ const Profile = () => {
         </div>
         
         <div className="mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Resumo Profissional</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Resumo ProfissionalAAAAA</label>
           <textarea
             value={profile.summary}
             readOnly
