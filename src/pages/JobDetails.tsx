@@ -58,7 +58,6 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
       if (userStr && job.modules) {
         const user = JSON.parse(userStr);
         
-        // Prepara os dados do curso
         const courseData = {
           id: job.id,
           title: job.title,
@@ -87,14 +86,11 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
           }))
         };
 
-        // Verifica se o usuário já está matriculado
         const userCourses = user.courses || [];
         if (!userCourses.some(c => c.id === courseData.id)) {
-          // Atualiza os cursos do usuário
           user.courses = [...userCourses, courseData];
           localStorage.setItem('currentUser', JSON.stringify(user));
 
-          // Atualiza a lista de usuários registrados
           const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
           const updatedUsers = users.map(u => 
             u.email === user.email ? user : u
@@ -165,7 +161,6 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
             </ul>
           </div>
 
-          {/* Seção de Cursos Recomendados */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Cursos Recomendados</h2>
             {job.recommendedCourses && job.recommendedCourses.length > 0 ? (
@@ -191,7 +186,6 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
             )}
           </div>
 
-          {/* Seção de Módulos do Curso */}
           {job.modules && job.modules.length > 0 && (
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
