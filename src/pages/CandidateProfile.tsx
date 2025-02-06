@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PencilIcon, MapPinIcon, PhoneIcon, MailIcon, BriefcaseIcon, BookOpenIcon, LogOutIcon, PlayIcon, StarIcon, GlobeIcon, HeartIcon } from 'lucide-react';
 import { Course } from './Courses';
-import tutorialVideo from '../components/video/Video.mp4';
+const tutorialVideo = '../components/video/Video.mp4';
 
 type UserData = {
   id: string;
@@ -65,7 +65,7 @@ const VideoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
               controlsList="nodownload"
               onContextMenu={(e) => e.preventDefault()}
             >
-              <source src={tutorialVideo} type="video/mp4" />
+              <source src={`https://user-images.githubusercontent.com/LuizEduardo20/JobFlow/raw/main/${tutorialVideo}` type="video/mp4" />
               Seu navegador não suporta a tag de vídeo.
             </video>
           </div>
