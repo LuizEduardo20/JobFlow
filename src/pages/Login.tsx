@@ -22,20 +22,16 @@ function Login({ onNavigate }: { onNavigate: (page: string) => void }) {
       setError('');
       setLoading(true);
 
-      // Obtém a lista de usuários registrados
       const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
       
-      // Procura o usuário com o email fornecido
       const user = registeredUsers.find((u: any) => u.email === email);
 
       if (!user || user.password !== password) {
         throw new Error('Email ou senha inválidos');
       }
 
-      // Remove dados sensíveis antes de salvar no localStorage
       const { password: _pass, ...userDataWithoutPassword } = user;
 
-      // Salva os dados do usuário logado
       localStorage.setItem('currentUser', JSON.stringify(userDataWithoutPassword));
       localStorage.setItem('isUserLoggedIn', 'true');
 
