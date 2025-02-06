@@ -11,9 +11,8 @@ function Home({ onNavigate }: HomeProps) {
   const handleSearch = () => {
     if (!searchTerm.trim()) return;
 
-    // Cria uma nova vaga baseada no termo de busca
     const newJob: Job = {
-      id: Date.now(), // ID único baseado no timestamp
+      id: Date.now(),
       title: searchTerm,
       company: "Empresa em Destaque",
       location: "Local a definir",
@@ -23,26 +22,17 @@ function Home({ onNavigate }: HomeProps) {
       status: "Aberta"
     };
 
-    // Recupera vagas existentes ou inicializa array vazio
     const savedJobs = localStorage.getItem('jobs');
     const existingJobs = savedJobs ? JSON.parse(savedJobs) : [];
 
-    // Adiciona nova vaga ao array
     const updatedJobs = [newJob, ...existingJobs];
-
-    // Salva no localStorage
     localStorage.setItem('jobs', JSON.stringify(updatedJobs));
-
-    // Salva o termo de busca para usar na página de vagas
     localStorage.setItem('searchTerm', searchTerm);
-
-    // Navega para a página de vagas
     onNavigate('jobs');
   };
 
   return (
     <div className="flex-1">
-      {/* Hero Section */}
       <section className="bg-gray-900 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -88,7 +78,6 @@ function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* Featured Jobs Section */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8">Vagas em Destaque</h2>
@@ -118,7 +107,6 @@ function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* IFPI Section */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
