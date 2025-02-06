@@ -82,14 +82,12 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
         return course;
       });
 
-      // Atualiza o localStorage
       const userStr = localStorage.getItem('currentUser');
       if (userStr) {
         const user = JSON.parse(userStr);
         user.courses = updatedCourses;
         localStorage.setItem('currentUser', JSON.stringify(user));
 
-        // Atualiza a lista de usuários registrados
         const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
         const updatedUsers = users.map(u => 
           u.email === user.email ? user : u
