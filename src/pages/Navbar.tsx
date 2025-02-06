@@ -14,7 +14,6 @@ function Navbar({ onNavigate }: { onNavigate: (page: string) => void }) {
     <nav className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo/Nome do App */}
           <div className="flex items-center">
             <button 
               onClick={() => onNavigate('dashboard')}
@@ -24,7 +23,6 @@ function Navbar({ onNavigate }: { onNavigate: (page: string) => void }) {
             </button>
           </div>
 
-          {/* Menu para Desktop */}
           <div className="hidden md:flex items-center space-x-4">
             <button
               onClick={() => onNavigate('profile')}
@@ -49,7 +47,6 @@ function Navbar({ onNavigate }: { onNavigate: (page: string) => void }) {
             </button>
           </div>
 
-          {/* Botão Menu Hambúrguer para Mobile */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -65,7 +62,6 @@ function Navbar({ onNavigate }: { onNavigate: (page: string) => void }) {
         </div>
       </div>
 
-      {/* Menu Mobile */}
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
