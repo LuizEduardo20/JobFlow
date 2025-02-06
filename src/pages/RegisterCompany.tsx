@@ -1,9 +1,27 @@
 import { useState, useEffect } from 'react';
 import { BriefcaseIcon } from 'lucide-react';
 
+interface FormData {
+  name: string;
+  cnpj: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  location: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  cidade: string;
+  estado: string;
+  segment: string;
+  companySize: string;
+  bairro: string;
+}
+
 function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const [formData, setFormData] = useState({
-    name: '', // Nome Fantasia
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
     cnpj: '',
     email: '',
     password: '',
@@ -11,21 +29,23 @@ function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void })
     phone: '',
     location: '',
     cep: '',
-    city: '',
-    state: '',
-    segment: '', // Segmento/Área de atuação
-    companySize: '', // Tamanho da empresa
+    logradouro: '',
+    numero: '',
+    cidade: '',
+    estado: '',
+    segment: '',
+    companySize: '',
+    bairro: ''
   });
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const companySizes = [
-    'MEI (1 pessoa)',
-    'Microempresa (até 19 funcionários)',
-    'Pequena empresa (20 a 99 funcionários)',
-    'Média empresa (100 a 499 funcionários)',
-    'Grande empresa (500+ funcionários)'
+    'MEI (9 pessoa a 19 Funcionários)',
+    'Pequena empresa (10 a 49 Funcionários)',
+    'Média empresa (50 a 99 Funcionários)',
+    'Grande empresa (100 ou mais Funcionários)'
   ];
 
   useEffect(() => {
@@ -48,14 +68,12 @@ function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void })
       return false;
     }
 
-    // Validação básica de CNPJ (14 dígitos)
     const cnpjClean = formData.cnpj.replace(/\D/g, '');
     if (cnpjClean.length !== 14) {
       setError('CNPJ inválido');
       return false;
     }
 
-    // Validação básica de CEP (8 dígitos)
     const cepClean = formData.cep.replace(/\D/g, '');
     if (cepClean.length !== 8) {
       setError('CEP inválido');
@@ -63,6 +81,33 @@ function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void })
     }
 
     return true;
+  };
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    setFormData({ ...formData, cep: e.target.value });
+  };
+
+  const buscarCep = async () => {
+    const cep = formData.cep.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        
+        if (!data.erro) {
+          setFormData(prev => ({
+            ...prev,
+            logradouro: data.logradouro,
+            bairro: data.bairro,
+            cidade: data.localidade,
+            estado: data.uf
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,23 +128,16 @@ function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void })
         address: {
           street: formData.location,
           cep: formData.cep,
-          city: formData.city,
-          state: formData.state
+          city: formData.cidade,
+          state: formData.estado
         },
         createdAt: new Date().toISOString(),
         status: 'active'
       };
 
-      // Obtém a lista atual de empresas ou inicia uma nova lista
       const existingCompanies = JSON.parse(localStorage.getItem('registeredCompanies') || '[]');
-      
-      // Adiciona a nova empresa à lista
       existingCompanies.push(companyData);
-      
-      // Salva a lista atualizada
       localStorage.setItem('registeredCompanies', JSON.stringify(existingCompanies));
-      
-      // Salva os dados da empresa logada
       localStorage.setItem('companyUser', JSON.stringify(companyData));
       localStorage.setItem('isCompanyLoggedIn', 'true');
 
@@ -249,71 +287,114 @@ function RegisterCompany({ onNavigate }: { onNavigate: (page: string) => void })
               </div>
             </div>
 
-            <div>
-              <label htmlFor="cep" className="block text-sm font-medium text-gray-700">
-                CEP
-              </label>
-              <div className="mt-1">
-                <input
-                  id="cep"
-                  name="cep"
-                  type="text"
-                  required
-                  placeholder="00000-000"
-                  value={formData.cep}
-                  onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="cep" className="block text-sm font-medium text-gray-700">
+                  CEP
+                </label>
+                <div className="mt-1 flex gap-2">
+                  <input
+                    id="cep"
+                    name="cep"
+                    type="text"
+                    required
+                    placeholder="00000-000"
+                    value={formData.cep}
+                    onChange={handleCepChange}
+                    maxLength={9}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={buscarCep}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Buscar
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Endereço
-              </label>
-              <div className="mt-1">
-                <input
-                  id="location"
-                  name="location"
-                  type="text"
-                  required
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                  Cidade
+              <div className="sm:col-span-2">
+                <label htmlFor="logradouro" className="block text-sm font-medium text-gray-700">
+                  Endereço
                 </label>
                 <div className="mt-1">
                   <input
-                    id="city"
-                    name="city"
+                    id="logradouro"
+                    name="logradouro"
                     type="text"
                     required
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    value={formData.logradouro}
+                    onChange={(e) => setFormData({ ...formData, logradouro: e.target.value })}
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="bairro" className="block text-sm font-medium text-gray-700">
+                  Bairro
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="bairro"
+                    name="bairro"
+                    type="text"
+                    required
+                    value={formData.bairro}
+                    onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700">
+                  Cidade
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="cidade"
+                    name="cidade"
+                    type="text"
+                    required
+                    value={formData.cidade}
+                    onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-gray-700">
                   Estado
                 </label>
                 <div className="mt-1">
                   <input
-                    id="state"
-                    name="state"
+                    id="estado"
+                    name="estado"
                     type="text"
                     required
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    value={formData.estado}
+                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="numero" className="block text-sm font-medium text-gray-700">
+                  Número
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="numero"
+                    name="numero"
+                    type="text"
+                    required
+                    placeholder="123"
+                    value={formData.numero}
+                    onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
