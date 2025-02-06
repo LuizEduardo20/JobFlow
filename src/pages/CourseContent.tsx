@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, PlayCircleIcon, CheckCircleIcon } from 'lucide-react';
-import { Course } from './Courses';  // Importar o tipo Course
+import { Course } from './Courses';
 
 type Video = {
   id: number;
@@ -43,11 +43,9 @@ function CourseContent({ onBack, onNavigate }: CourseContentProps) {
       const course = JSON.parse(courseStr);
       setCurrentCourse(course);
 
-      // Se houver módulos, seleciona o primeiro por padrão
       if (course.modulesList && course.modulesList.length > 0) {
         setCurrentModule(course.modulesList[0]);
         
-        // Se houver vídeos no módulo, seleciona o primeiro
         if (course.modulesList[0].videos && course.modulesList[0].videos.length > 0) {
           setCurrentVideo(course.modulesList[0].videos[0]);
         }
@@ -74,7 +72,6 @@ function CourseContent({ onBack, onNavigate }: CourseContentProps) {
   const handleVideoComplete = (videoId: number) => {
     setCompletedVideos(prev => [...prev, videoId]);
     
-    // Salva o progresso no localStorage
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
       const user = JSON.parse(userStr);
@@ -99,7 +96,6 @@ function CourseContent({ onBack, onNavigate }: CourseContentProps) {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Lista de Módulos e Vídeos */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h1 className="text-xl font-bold text-gray-900 mb-4">
@@ -147,7 +143,6 @@ function CourseContent({ onBack, onNavigate }: CourseContentProps) {
             </div>
           </div>
 
-          {/* Área do Vídeo */}
           <div className="lg:col-span-2">
             {currentVideo ? (
               <div className="bg-white rounded-lg shadow-sm p-6">
