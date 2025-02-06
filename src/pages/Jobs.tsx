@@ -233,21 +233,16 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
   const [searchTerm, setSearchTerm] = useState('');
   const jobsPerPage = 6;
 
-  // Carrega as vagas quando o componente montar
   useEffect(() => {
-    // Carrega vagas do localStorage e combina com as vagas padrão
     const savedJobs = localStorage.getItem('jobs');
     const customJobs = savedJobs ? JSON.parse(savedJobs) : [];
     
-    // Combina vagas padrão com vagas personalizadas
     const allJobs = [...defaultJobs, ...customJobs];
     
-    // Ordenar por ID para manter as vagas mais recentes no topo
     const sortedJobs = allJobs.sort((a, b) => b.id - a.id);
     
     setJobs(sortedJobs);
 
-    // Carrega termo de busca se existir
     const savedSearchTerm = localStorage.getItem('searchTerm');
     if (savedSearchTerm) {
       setSearchTerm(savedSearchTerm);
@@ -255,7 +250,6 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
     }
   }, []);
 
-  // Filtra as vagas em tempo real baseado no searchTerm
   const filteredJobs = jobs.filter(job => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -270,7 +264,6 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
   const startIndex = (currentPage - 1) * jobsPerPage;
   const currentJobs = filteredJobs.slice(startIndex, startIndex + jobsPerPage);
 
-  // Reset da página quando mudar a busca
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
