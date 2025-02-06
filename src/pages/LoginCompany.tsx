@@ -22,20 +22,16 @@ function LoginCompany({ onNavigate }: { onNavigate: (page: string) => void }) {
       setError('');
       setLoading(true);
 
-      // Obtém a lista de empresas registradas
       const registeredCompanies = JSON.parse(localStorage.getItem('registeredCompanies') || '[]');
       
-      // Procura a empresa com o email fornecido
       const company = registeredCompanies.find((comp: any) => comp.email === email);
 
       if (!company || company.password !== password) {
         throw new Error('Credenciais inválidas');
       }
 
-      // Remove a senha antes de salvar no localStorage
       const { password: _, ...companyDataWithoutPassword } = company;
 
-      // Salva os dados da empresa logada
       localStorage.setItem('companyUser', JSON.stringify(companyDataWithoutPassword));
       localStorage.setItem('isCompanyLoggedIn', 'true');
 
