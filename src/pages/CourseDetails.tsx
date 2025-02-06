@@ -21,7 +21,6 @@ function CourseDetails({ course, onBack, onNavigate }: CourseDetailsProps) {
       if (userStr) {
         const user = JSON.parse(userStr);
         
-        // Prepara os dados do curso para salvar
         const courseData = {
           id: course.id,
           title: course.title,
@@ -34,14 +33,11 @@ function CourseDetails({ course, onBack, onNavigate }: CourseDetailsProps) {
           enrollmentDate: new Date().toISOString()
         };
 
-        // Verifica se o usuário já está matriculado
         const userCourses = user.courses || [];
         if (!userCourses.some(c => c.id === courseData.id)) {
-          // Atualiza os cursos do usuário
           user.courses = [...userCourses, courseData];
           localStorage.setItem('currentUser', JSON.stringify(user));
 
-          // Atualiza a lista de usuários registrados
           const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
           const updatedUsers = users.map(u => 
             u.email === user.email ? user : u
