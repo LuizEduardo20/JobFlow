@@ -12,7 +12,6 @@ function Navbar({ onNavigate }: NavbarProps) {
     <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo */}
           <div className="flex items-center">
             <button 
               onClick={() => onNavigate('home')} 
@@ -23,7 +22,6 @@ function Navbar({ onNavigate }: NavbarProps) {
             </button>
           </div>
 
-          {/* Menu Desktop */}
           <div className="hidden md:flex items-center space-x-8">
             <button 
               onClick={() => onNavigate('jobs')} 
@@ -55,7 +53,6 @@ function Navbar({ onNavigate }: NavbarProps) {
             </button>
           </div>
 
-          {/* Menu Mobile */}
           <div className="flex md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -72,7 +69,6 @@ function Navbar({ onNavigate }: NavbarProps) {
         </div>
       </div>
 
-      {/* Menu Mobile Dropdown */}
       <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'}`}>
         <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
           <button
