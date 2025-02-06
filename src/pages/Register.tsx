@@ -1,8 +1,27 @@
 import { useState, useEffect } from 'react';
 import { BriefcaseIcon } from 'lucide-react';
 
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  location: string;
+  resume: {
+    name: string;
+    type: string;
+  } | null;
+  cep: string;
+  logradouro: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  numero: string;
+}
+
 function Register({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     password: '',
@@ -13,6 +32,12 @@ function Register({ onNavigate }: { onNavigate: (page: string) => void }) {
       name: string;
       type: string;
     } | null,
+    cep: '',
+    logradouro: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    numero: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,21 +84,13 @@ function Register({ onNavigate }: { onNavigate: (page: string) => void }) {
         status: 'active'
       };
 
-      // Obtém a lista atual de usuários ou inicia uma nova lista
       const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      
-      // Verifica se já existe um usuário com este email
       if (existingUsers.some((user: any) => user.email === formData.email)) {
         throw new Error('Este email já está cadastrado');
       }
-      
-      // Adiciona o novo usuário à lista
-      existingUsers.push(userData);
-      
-      // Salva a lista atualizada
+        existingUsers.push(userData);
       localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
       
-      // Salva os dados do usuário logado (sem a senha)
       const { password, confirmPassword, ...userDataWithoutPassword } = userData;
       localStorage.setItem('currentUser', JSON.stringify(userDataWithoutPassword));
       localStorage.setItem('isUserLoggedIn', 'true');
@@ -84,6 +101,37 @@ function Register({ onNavigate }: { onNavigate: (page: string) => void }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const buscarCep = async () => {
+    const cep = formData.cep.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const endereco = await response.json();
+
+        if (!endereco.erro) {
+          setFormData(prev => ({
+            ...prev,
+            logradouro: endereco.logradouro,
+            bairro: endereco.bairro,
+            cidade: endereco.localidade,
+            estado: endereco.uf
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+      }
+    }
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let cep = e.target.value;
+    cep = cep.replace(/\D/g, '');
+    if (cep.length > 5) {
+      cep = cep.replace(/(\d{5})(\d)/, '$1-$2');
+    }
+    setFormData(prev => ({ ...prev, cep }));
   };
 
   return (
@@ -163,19 +211,117 @@ function Register({ onNavigate }: { onNavigate: (page: string) => void }) {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Localização
-              </label>
-              <div className="mt-1">
-                <input
-                  id="location"
-                  name="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="cep" className="block text-sm font-medium text-gray-700">
+                  CEP
+                </label>
+                <div className="mt-1 flex gap-2">
+                  <input
+                    id="cep"
+                    name="cep"
+                    type="text"
+                    required
+                    placeholder="00000-000"
+                    value={formData.cep}
+                    onChange={handleCepChange}
+                    maxLength={9}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={buscarCep}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Buscar
+                  </button>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label htmlFor="logradouro" className="block text-sm font-medium text-gray-700">
+                  Endereço
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="logradouro"
+                    name="logradouro"
+                    type="text"
+                    required
+                    value={formData.logradouro}
+                    onChange={(e) => setFormData({ ...formData, logradouro: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="bairro" className="block text-sm font-medium text-gray-700">
+                  Bairro
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="bairro"
+                    name="bairro"
+                    type="text"
+                    required
+                    value={formData.bairro}
+                    onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700">
+                  Cidade
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="cidade"
+                    name="cidade"
+                    type="text"
+                    required
+                    value={formData.cidade}
+                    onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-gray-700">
+                  Estado
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="estado"
+                    name="estado"
+                    type="text"
+                    required
+                    value={formData.estado}
+                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="numero" className="block text-sm font-medium text-gray-700">
+                  Número
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="numero"
+                    name="numero"
+                    type="text"
+                    required
+                    placeholder="123"
+                    value={formData.numero}
+                    onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
