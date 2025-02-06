@@ -90,7 +90,7 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar onNavigate={handleNavigate} />
-      <div className={isLoggedIn ? "pt-16" : ""}>
+      <div className="pt-16">
         {renderPage()}
       </div>
       <Footer onNavigate={handleNavigate} />
