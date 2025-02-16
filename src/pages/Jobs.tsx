@@ -1,62 +1,89 @@
 import { SearchIcon, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import JobDetails from './JobDetails';
-import { BookmarkIcon } from 'lucide-react';
+
+export interface Job {
+  id: string;
+  title: string;
+  company: string;
+  cidade?: string;
+  estado?: string;
+  salary?: string;
+  tipo_contrato?: string;
+  modalidade?: string;
+  status?: string;
+  skills?: string[];
+  description?: string;
+  requirements?: string;
+  beneficios?: string[];
+  recommendedCourses?: {
+    id: string;
+    title: string;
+    instructor: string;
+  }[];
+  modules?: {
+    id: string;
+    title: string;
+    videos: {
+      id: string;
+      title: string;
+      duration: string;
+      url: string;
+    }[];
+  }[];
+}
 
 type Video = {
+  id: string;
   title: string;
   duration: string;
   url?: string;
   fileName?: string;
 };
 
-type Module = {
-  title: string;
-  videos: Video[];
-};
-
-type Job = {
-  id: number;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  description: string;
-  skills: string[];
-  status: string;
-  modules?: Module[];
-};
-
 const defaultJobs: Job[] = [
   {
-    id: 1,
+    id: "1",
     title: "Vendedor",
     company: "Magazine Center",
-    location: "São Paulo, SP (Presencial)",
+    cidade: "São Paulo",
+    estado: "SP",
     salary: " 2-3k",
     description: "Procuramos vendedor com experiência em vendas de varejo e atendimento ao cliente...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Presencial",
     skills: ["Vendas", "Atendimento", "Proatividade"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 2,
+    id: "2",
     title: "Desenvolvedor Frontend",
     company: "Digital Innovation Corp",
-    location: "Rio de Janeiro, RJ (Híbrido)",
+    cidade: "Rio de Janeiro",
+    estado: "RJ",
     salary: " 6-9k",
     description: "Procuramos desenvolvedor frontend para criar interfaces modernas e responsivas...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Híbrido",
     skills: ["React", "JavaScript", "CSS"],
+    beneficios: [],
     status: "Aberta",
     modules: [
       {
+        id: "react-module-1",
         title: "Introdução ao React",
         videos: [
           {
+            id: "react-1",
             title: "Fundamentos do React",
             duration: "15:00",
             url: "https://example.com/video1.mp4"
           },
           {
+            id: "react-2",
             title: "Componentes e Props",
             duration: "20:00",
             url: "https://example.com/video2.mp4"
@@ -64,14 +91,17 @@ const defaultJobs: Job[] = [
         ]
       },
       {
+        id: "react-module-2",
         title: "Hooks e Estado",
         videos: [
           {
+            id: "react-3",
             title: "useState e useEffect",
             duration: "25:00",
             url: "https://example.com/video3.mp4"
           },
           {
+            id: "react-4",
             title: "Custom Hooks",
             duration: "18:00",
             url: "https://example.com/video4.mp4"
@@ -81,44 +111,62 @@ const defaultJobs: Job[] = [
     ]
   },
   {
-    id: 3,
+    id: "3",
     title: "Marketing Digital",
     company: "Agência Pulse",
-    location: "Remoto",
+    cidade: "Remoto",
+    estado: "",
     salary: " 4-6k",
     description: "Especialista em marketing digital para gerenciar campanhas e redes sociais...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Remoto",
     skills: ["Social Media", "Analytics", "SEO"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 4,
+    id: "4",
     title: "Analista Financeiro",
     company: "Banco NextGen",
-    location: "São Paulo, SP (Híbrido)",
+    cidade: "São Paulo",
+    estado: "SP",
     salary: " 5-7k",
     description: "Analista financeiro para gestão de relatórios e análise de dados bancários...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Híbrido",
     skills: ["Excel", "Power BI", "SQL"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 5,
+    id: "5",
     title: "Designer UX/UI",
     company: "Creative Tech",
-    location: "Florianópolis, SC (Remoto)",
+    cidade: "Florianópolis",
+    estado: "SC",
     salary: " 7-10k",
     description: "Designer para criar experiências digitais inovadoras e interfaces intuitivas...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Remoto",
     skills: ["Figma", "Adobe XD", "Prototyping"],
+    beneficios: [],
     status: "Aberta",
     modules: [
       {
+        id: "ux-module-1",
         title: "Fundamentos de UX/UI",
         videos: [
           {
+            id: "ux-1",
             title: "Introdução ao Design de Interfaces",
             duration: "20:00",
             url: "https://example.com/ux-video1.mp4"
           },
           {
+            id: "ux-2",
             title: "Princípios de Usabilidade",
             duration: "25:00",
             url: "https://example.com/ux-video2.mp4"
@@ -126,14 +174,17 @@ const defaultJobs: Job[] = [
         ]
       },
       {
+        id: "ux-module-2",
         title: "Prototipagem",
         videos: [
           {
+            id: "ux-3",
             title: "Figma Básico",
             duration: "30:00",
             url: "https://example.com/ux-video3.mp4"
           },
           {
+            id: "ux-4",
             title: "Criando Protótipos Interativos",
             duration: "35:00",
             url: "https://example.com/ux-video4.mp4"
@@ -143,34 +194,47 @@ const defaultJobs: Job[] = [
     ]
   },
   {
-    id: 6,
+    id: "6",
     title: "Gerente de Projetos",
     company: "Consultoria Inova",
-    location: "Belo Horizonte, MG (Presencial)",
+    cidade: "Belo Horizonte",
+    estado: "MG",
     salary: " 8-12k",
     description: "Gerente de projetos com experiência em metodologias ágeis...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Presencial",
     skills: ["Scrum", "Jira", "Liderança"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 7,
+    id: "7",
     title: "Analista de Dados",
     company: "Data Solutions",
-    location: "Porto Alegre, RS (Híbrido)",
+    cidade: "Porto Alegre",
+    estado: "RS",
     salary: " 6-8k",
     description: "Analista para trabalhar com big data e business intelligence...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Híbrido",
     skills: ["Python", "SQL", "Tableau"],
+    beneficios: [],
     status: "Aberta",
     modules: [
       {
+        id: "data-module-1",
         title: "Introdução à Análise de Dados",
         videos: [
           {
+            id: "data-1",
             title: "Fundamentos de SQL",
             duration: "25:00",
             url: "https://example.com/data-video1.mp4"
           },
           {
+            id: "data-2",
             title: "Python para Análise de Dados",
             duration: "30:00",
             url: "https://example.com/data-video2.mp4"
@@ -178,14 +242,17 @@ const defaultJobs: Job[] = [
         ]
       },
       {
+        id: "data-module-2",
         title: "Visualização de Dados",
         videos: [
           {
+            id: "data-3",
             title: "Introdução ao Tableau",
             duration: "28:00",
             url: "https://example.com/data-video3.mp4"
           },
           {
+            id: "data-4",
             title: "Criando Dashboards Efetivos",
             duration: "32:00",
             url: "https://example.com/data-video4.mp4"
@@ -195,33 +262,48 @@ const defaultJobs: Job[] = [
     ]
   },
   {
-    id: 8,
+    id: "8",
     title: "Recepcionista",
     company: "Hospital Central",
-    location: "Curitiba, PR (Presencial)",
+    cidade: "Curitiba",
+    estado: "PR",
     salary: " 2-3k",
     description: "Recepcionista para atendimento em hospital, turno integral...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Presencial",
     skills: ["Atendimento", "Organização", "Pacote Office"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 9,
+    id: "9",
     title: "DevOps Engineer",
     company: "Cloud Tech",
-    location: "Recife, PE (Remoto)",
+    cidade: "Recife",
+    estado: "PE",
     salary: " 9-13k",
     description: "Engenheiro DevOps para automatização e gestão de infraestrutura...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Remoto",
     skills: ["AWS", "Docker", "Jenkins"],
+    beneficios: [],
     status: "Aberta"
   },
   {
-    id: 10,
+    id: "10",
     title: "Assistente Administrativo",
     company: "Grupo Empresarial",
-    location: "Brasília, DF (Presencial)",
+    cidade: "Brasília",
+    estado: "DF",
     salary: " 2.5-3.5k",
     description: "Assistente para rotinas administrativas e suporte à gestão...",
+    requirements: "",
+    tipo_contrato: "CLT",
+    modalidade: "Presencial",
     skills: ["Excel", "Organização", "Comunicação"],
+    beneficios: [],
     status: "Aberta"
   }
 ];
@@ -255,8 +337,8 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
     return (
       job.title.toLowerCase().includes(searchLower) ||
       job.company.toLowerCase().includes(searchLower) ||
-      job.description.toLowerCase().includes(searchLower) ||
-      job.skills.some(skill => skill.toLowerCase().includes(searchLower))
+      (job.description?.toLowerCase().includes(searchLower) || false) ||
+      (job.skills?.some(skill => skill.toLowerCase().includes(searchLower)) || false)
     );
   });
 
@@ -274,6 +356,15 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
         job={selectedJob} 
         onBack={() => setSelectedJob(null)}
         onNavigate={onNavigate}
+        onApply={(job) => {
+          // Save the application to localStorage
+          const applications = JSON.parse(localStorage.getItem('userApplications') || '[]');
+          applications.push(job);
+          localStorage.setItem('userApplications', JSON.stringify(applications));
+          
+          setSelectedJob(null);
+          onNavigate('applications'); // Navigate to applications page
+        }}
       />
     );
   }
@@ -317,9 +408,9 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
                     )}
                   </div>
                   <p className="text-gray-600 mb-2">{job.company}</p>
-                  <p className="text-gray-500 mb-4">{job.location}</p>
+                  <p className="text-gray-500 mb-4">{job.cidade}, {job.estado}</p>
                   <div className="flex gap-2 mb-4">
-                    {job.skills.map((skill, index) => (
+                    {job.skills?.map((skill, index) => (
                       <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
                         {skill}
                       </span>
@@ -328,7 +419,7 @@ function Jobs({ onNavigate }: { onNavigate: (page: string, job?: Job) => void })
                 </div>
                 <span className="text-green-600 font-semibold">R$ {job.salary}</span>
               </div>
-              <p className="text-gray-600 mb-4">{job.description.substring(0, 200)}...</p>
+              <p className="text-gray-600 mb-4">{job.description?.substring(0, 200)}...</p>
               {job.modules && job.modules.length > 0 && (
                 <div className="mt-4 flex items-center text-blue-600">
                   <BookOpen className="h-5 w-5 mr-2" />
