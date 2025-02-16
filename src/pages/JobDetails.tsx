@@ -1,17 +1,32 @@
 import { useState } from 'react';
-import { ArrowLeftIcon, PlayCircleIcon } from 'lucide-react';
+import { ArrowLeftIcon, MapPinIcon, PlayIcon } from 'lucide-react';
 import { Job } from './Jobs';
 
-type JobDetailsProps = {
+interface JobDetailsProps {
   job: Job;
   onBack: () => void;
   onNavigate: (page: string) => void;
-};
+  onApply: (job: Job) => void;
+}
 
-function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
+interface Video {
+  id: string;
+  title: string;
+  duration: string;
+  url: string;
+  completed?: boolean;
+}
+
+interface Module {
+  id: string;
+  title: string;
+  videos: Video[];
+}
+
+export default function JobDetails({ job, onBack, onNavigate, onApply }: JobDetailsProps) {
   const [isApplying, setIsApplying] = useState(false);
   
-  const handleApply = () => {
+  const handleApply = async () => {
     const isLoggedIn = localStorage.getItem('isUserLoggedIn');
     
     if (!isLoggedIn) {
@@ -31,7 +46,7 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
 
       setIsApplying(true);
 
-      setTimeout(() => {
+      try {
         const applications = JSON.parse(localStorage.getItem('applications') || '[]');
         if (!applications.includes(job.company)) {
           applications.push(job.company);
@@ -39,9 +54,14 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
         }
 
         alert('Currículo enviado com sucesso!');
-        setIsApplying(false);
+        onApply(job);
         onNavigate('profile');
-      }, 1500);
+      } catch (error) {
+        console.error('Erro ao aplicar para a vaga:', error);
+        alert('Erro ao se candidatar para a vaga. Tente novamente mais tarde.');
+      } finally {
+        setIsApplying(false);
+      }
     }
   };
 
@@ -63,8 +83,8 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
           title: job.title,
           company: job.company,
           instructor: job.company,
-          duration: job.modules.reduce((total, module) => 
-            total + module.videos.reduce((sum, video) => 
+          duration: job.modules.reduce((total: number, module: Module) => 
+            total + module.videos.reduce((sum: number, video: Video) => 
               sum + parseInt(video.duration.split(':')[0]) || 0, 0
             ), 0
           ) + " minutos",
@@ -87,12 +107,12 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
         };
 
         const userCourses = user.courses || [];
-        if (!userCourses.some(c => c.id === courseData.id)) {
+        if (!userCourses.some((c: { id: string }) => c.id === courseData.id)) {
           user.courses = [...userCourses, courseData];
           localStorage.setItem('currentUser', JSON.stringify(user));
 
           const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-          const updatedUsers = users.map(u => 
+          const updatedUsers = users.map((u: any) => 
             u.email === user.email ? user : u
           );
           localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
@@ -126,46 +146,90 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
               <p className="text-xl text-gray-600 mb-2">{job.company}</p>
-              <p className="text-gray-500">{job.location}</p>
-            </div>
-            <span className="text-green-600 font-semibold text-xl">R$ {job.salary}</span>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Habilidades Necessárias</h2>
-            <div className="flex flex-wrap gap-2">
-              {job.skills.map((skill) => (
-                <span
-                  key={`skill-${skill.id}`}
-                  className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
-                >
-                  {skill}
+              <div className="flex items-center gap-2 text-gray-500">
+                <MapPinIcon className="h-5 w-5" />
+                <span>
+                  {job.cidade && job.estado 
+                    ? `${job.cidade} - ${job.estado}`
+                    : 'Localização não especificada'}
                 </span>
-              ))}
+              </div>
+            </div>
+            <span className="text-green-600 font-semibold text-xl">
+              {job.salary ? `R$ ${job.salary}` : 'A combinar'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Tipo de Contrato</h3>
+              <p className="text-gray-900 font-medium">{job.tipo_contrato || 'Não especificado'}</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Modalidade</h3>
+              <p className="text-gray-900 font-medium">{job.modalidade || 'Não especificado'}</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Status</h3>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                {job.status || 'Aberta'}
+              </span>
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Descrição da Vaga</h2>
-            <p className="text-gray-600 whitespace-pre-line">{job.description}</p>
-          </div>
+          {job.skills && job.skills.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Habilidades Necessárias</h2>
+              <div className="flex flex-wrap gap-2">
+                {job.skills.map((skill: string, index: number) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Benefícios</h2>
-            <ul className="list-disc list-inside text-gray-600">
-              <li>Vale Refeição</li>
-              <li>Vale Transporte</li>
-              <li>Plano de Saúde</li>
-              <li>Plano Odontológico</li>
-              <li>Seguro de Vida</li>
-            </ul>
-          </div>
+          {job.description && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Descrição da Vaga</h2>
+              <p className="text-gray-600 whitespace-pre-line">{job.description}</p>
+            </div>
+          )}
+
+          {job.requirements && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Requisitos</h2>
+              <p className="text-gray-600 whitespace-pre-line">{job.requirements}</p>
+            </div>
+          )}
+
+          {job.beneficios && job.beneficios.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Benefícios</h2>
+              <div className="flex flex-wrap gap-2">
+                {job.beneficios.map((beneficio: string, index: number) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                  >
+                    {beneficio}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Cursos Recomendados</h2>
             {job.recommendedCourses && job.recommendedCourses.length > 0 ? (
               <div className="space-y-4">
-                {job.recommendedCourses.map((course) => (
+                {job.recommendedCourses.map((course: { id: string; title: string; instructor: string }) => (
                   <div
                     key={`course-${course.id}`}
                     className="bg-blue-50 p-4 rounded-lg border border-blue-100"
@@ -203,15 +267,15 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
                 </div>
 
                 <div className="space-y-4 mb-6">
-                  {job.modules.map((module, index) => (
+                  {job.modules.map((module: Module, index: number) => (
                     <div key={module.id} className="bg-white rounded-lg p-4 shadow-sm">
                       <h4 className="font-medium text-gray-900 mb-2">
                         Módulo {index + 1}: {module.title}
                       </h4>
                       <ul className="space-y-2">
-                        {module.videos.map((video, vIndex) => (
+                        {module.videos.map((video: Video, vIndex: number) => (
                           <li key={vIndex} className="flex items-center text-gray-600">
-                            <PlayCircleIcon className="h-4 w-4 mr-2" />
+                            <PlayIcon className="h-4 w-4 mr-2" />
                             <span>{video.title}</span>
                             <span className="ml-2 text-sm text-gray-500">
                               ({video.duration})
@@ -245,5 +309,3 @@ function JobDetails({ job, onBack, onNavigate }: JobDetailsProps) {
     </div>
   );
 }
-
-export default JobDetails; 
