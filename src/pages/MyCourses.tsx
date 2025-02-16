@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpenIcon, ClockIcon, UsersIcon, PlayCircleIcon, CheckCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, PlayCircleIcon, CheckCircle, BookOpen } from 'lucide-react';
 
 type Video = {
   id: string;
@@ -63,6 +63,14 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
             return module;
           });
 
+          const updatedVideo = updatedModules
+            .find(m => m.id === moduleId)
+            ?.videos.find(v => v.id === videoId);
+          
+          if (updatedVideo) {
+            setCurrentVideo(updatedVideo);
+          }
+
           const totalVideos = course.modulesList.reduce(
             (sum, module) => sum + module.videos.length,
             0
@@ -89,7 +97,7 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
         localStorage.setItem('currentUser', JSON.stringify(user));
 
         const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-        const updatedUsers = users.map(u => 
+        const updatedUsers = users.map((u: { email: string }) => 
           u.email === user.email ? user : u
         );
         localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
@@ -138,19 +146,6 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
                 <p className="text-gray-600 mb-2">{course.company}</p>
                 <p className="text-gray-500 mb-4">Instrutor: {course.instructor}</p>
                 
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-500 mb-1">
-                    <span>Progresso</span>
-                    <span>{course.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 rounded-full h-2" 
-                      style={{ width: `${course.progress}%` }}
-                    />
-                  </div>
-                </div>
-
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>{course.modules} módulos</span>
                   <span>{course.duration}</span>
@@ -215,7 +210,17 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
                         src={currentVideo.url}
                         controls
                         className="rounded-lg w-full"
-                        onEnded={() => {
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <h3 className="text-xl font-semibold">{currentVideo.title}</h3>
+                        {currentVideo.completed && (
+                          <CheckCircle className="h-5 w-5 text-green-500 ml-2" />
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
                           const currentModule = selectedCourse.modulesList.find(
                             module => module.videos.some(v => v.id === currentVideo.id)
                           );
@@ -227,9 +232,23 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
                             );
                           }
                         }}
-                      />
+                        className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                          currentVideo.completed 
+                            ? 'bg-green-100 text-green-700 cursor-default'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                        disabled={currentVideo.completed}
+                      >
+                        {currentVideo.completed ? (
+                          <>
+                            <CheckCircle className="h-5 w-5 mr-2" />
+                            Aula Completada
+                          </>
+                        ) : (
+                          'Marcar como completa'
+                        )}
+                      </button>
                     </div>
-                    <h3 className="text-xl font-semibold">{currentVideo.title}</h3>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-500">
@@ -245,4 +264,4 @@ function MyCourses({ onBack, onNavigate }: { onBack: () => void; onNavigate: (pa
   );
 }
 
-export default MyCourses; 
+export default MyCourses;
