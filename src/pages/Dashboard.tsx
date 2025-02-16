@@ -1,4 +1,4 @@
-import { BookmarkIcon, PlusIcon, XIcon, PencilIcon, MapPinIcon, PhoneIcon, MailIcon, BuildingIcon, LogOutIcon } from 'lucide-react';
+import { BookmarkIcon, PlusIcon, XIcon, PencilIcon, MapPinIcon, PhoneIcon, MailIcon, BuildingIcon, LogOutIcon, BookOpen, PlayIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 type Video = {
@@ -8,6 +8,7 @@ type Video = {
 };
 
 type Module = {
+  id: number;
   title: string;
   videos: Video[];
 };
@@ -16,23 +17,32 @@ type Job = {
   id: number;
   title: string;
   company: string;
-  location: string;
+  cidade: string;
+  estado: string;
   salary: string;
   description: string;
   requirements: string;
+  tipo_contrato: 'CLT' | 'PJ' | 'Estágio' | 'Temporário';
+  modalidade: 'Presencial' | 'Remoto' | 'Híbrido';
   skills: string[];
-  modules?: Module[];
+  beneficios: string[];
   status: string;
+  modules?: Module[];
 };
 
 interface FormData {
   title: string;
   description: string;
   requirements: string;
-  location: string;
+  location?: string;
   salary: string;
+  tipo_contrato: 'CLT' | 'PJ' | 'Estágio' | 'Temporário';
+  modalidade: 'Presencial' | 'Remoto' | 'Híbrido';
   skills: string[];
+  beneficios: string[];
   modules: Module[];
+  cidade: string;
+  estado: string;
 }
 
 interface DashboardProps {
@@ -71,8 +81,13 @@ function Dashboard({ onNavigate }: DashboardProps) {
     requirements: '',
     location: '',
     salary: '',
+    tipo_contrato: 'CLT',
+    modalidade: 'Presencial',
     skills: [],
-    modules: []
+    beneficios: [],
+    modules: [],
+    cidade: '',
+    estado: ''
   });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -113,43 +128,42 @@ function Dashboard({ onNavigate }: DashboardProps) {
       const newJob: Job = {
         id: Date.now(),
         title: formData.title,
-        company: 'Empresa Tecnologia LTDA',
-        location: formData.location || 'Remoto',
+        company: companyData?.name || 'Empresa',
+        cidade: formData.cidade,
+        estado: formData.estado,
         salary: formData.salary || 'A combinar',
         description: formData.description,
         requirements: formData.requirements,
+        tipo_contrato: formData.tipo_contrato,
+        modalidade: formData.modalidade,
         skills: formData.skills,
-        status: 'Aberta'
+        beneficios: formData.beneficios,
+        status: 'Aberta',
+        modules: formData.modules
       };
 
-      if (formData.modules.length > 0) {
-        newJob.modules = formData.modules.map(module => ({
-          title: module.title,
-          videos: module.videos.map(video => ({
-            title: video.title,
-            duration: video.duration,
-            url: video.file ? URL.createObjectURL(video.file) : '',
-            fileName: video.file?.name || ''
-          }))
-        }));
-      }
+      console.log('Nova vaga sendo criada:', newJob);
 
       const updatedJobs = [...jobs, newJob];
       setJobs(updatedJobs);
       localStorage.setItem('jobs', JSON.stringify(updatedJobs));
+      
+      console.log('Jobs salvos:', JSON.parse(localStorage.getItem('jobs') || '[]'));
 
       setShowPublishModal(false);
       setFormData({
         title: '',
         description: '',
         requirements: '',
-        location: '',
+        cidade: '',
+        estado: '',
         salary: '',
+        tipo_contrato: 'CLT',
+        modalidade: 'Presencial',
         skills: [],
+        beneficios: [],
         modules: []
       });
-
-      alert('Vaga publicada com sucesso!');
     } catch (error) {
       console.error('Erro ao publicar vaga:', error);
       alert('Erro ao publicar a vaga. Tente novamente.');
@@ -187,23 +201,28 @@ function Dashboard({ onNavigate }: DashboardProps) {
     }
   };
 
-  const addModule = () => {
+  const handleAddModule = () => {
     setFormData(prev => ({
       ...prev,
       modules: [
         ...prev.modules,
-        { title: '', videos: [] }
+        {
+          id: Date.now(),
+          title: '',
+          videos: []
+        }
       ]
     }));
   };
 
-  const addVideo = (moduleIndex: number) => {
+  const handleAddVideo = (moduleIndex: number) => {
     setFormData(prev => {
       const newModules = [...prev.modules];
-      newModules[moduleIndex].videos = [
-        ...newModules[moduleIndex].videos,
-        { title: '', duration: '', file: null }
-      ];
+      newModules[moduleIndex].videos.push({
+        title: '',
+        duration: '',
+        file: null
+      });
       return { ...prev, modules: newModules };
     });
   };
@@ -241,6 +260,41 @@ function Dashboard({ onNavigate }: DashboardProps) {
       modules: modules,
     };
   };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const formattedCep = value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .substring(0, 9)
+    
+    setEditForm(prev => ({ ...prev!, cep: formattedCep }))
+  }
+
+  const buscarCep = async () => {
+    if (editForm?.cep) {
+      try {
+        const cepLimpo = editForm.cep.replace(/\D/g, '')
+        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+        const data = await response.json()
+        
+        if (!data.erro) {
+          setEditForm(prev => ({
+            ...prev!,
+            logradouro: data.logradouro,
+            bairro: data.bairro,
+            cidade: data.localidade,
+            estado: data.uf
+          }))
+        } else {
+          alert('CEP não encontrado')
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error)
+        alert('Erro ao buscar CEP')
+      }
+    }
+  }
 
   return (
     <div className="flex-1 bg-gray-50 min-h-screen p-4 sm:p-8">
@@ -339,13 +393,34 @@ function Dashboard({ onNavigate }: DashboardProps) {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{selectedJob.title}</h2>
                   <p className="text-gray-600 mt-1">{selectedJob.company}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-gray-500">{selectedJob.cidade}, {selectedJob.estado}</span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setSelectedJob(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <XIcon className="h-6 w-6" />
-                </button>
+                <div className="flex flex-col items-end">
+                  <button
+                    onClick={() => setSelectedJob(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <XIcon className="h-6 w-6" />
+                  </button>
+                  <span className="text-green-600 font-semibold mt-2">R$ {selectedJob.salary}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-500">Tipo de Contrato</h4>
+                  <p className="text-gray-900">{selectedJob.tipo_contrato}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-500">Modalidade</h4>
+                  <p className="text-gray-900">{selectedJob.modalidade}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-500">Status</h4>
+                  <p className="text-gray-900">{selectedJob.status}</p>
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -358,6 +433,67 @@ function Dashboard({ onNavigate }: DashboardProps) {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Requisitos</h3>
                   <p className="text-gray-600 whitespace-pre-line">{selectedJob.requirements}</p>
                 </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Habilidades Necessárias</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedJob.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedJob.beneficios && selectedJob.beneficios.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Benefícios</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.beneficios.map((beneficio, index) => (
+                        <span
+                          key={index}
+                          className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full"
+                        >
+                          {beneficio}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedJob.modules && selectedJob.modules.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Curso Incluso na Vaga</h3>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <div className="flex items-center text-blue-600 mb-2">
+                        <BookOpen className="h-5 w-5 mr-2" />
+                        <span>{selectedJob.modules.length} módulos disponíveis</span>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedJob.modules.map((module, index) => (
+                          <div key={index} className="bg-white p-3 rounded-lg">
+                            <h4 className="font-medium text-gray-900 mb-1">{module.title}</h4>
+                            <ul className="space-y-1">
+                              {module.videos.map((video, vIndex) => (
+                                <li key={vIndex} className="text-sm text-gray-600 flex items-center">
+                                  <PlayIcon className="h-4 w-4 mr-2" />
+                                  {video.title} ({video.duration})
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-600">
+                    Esta vaga não possui nenhum curso incluso.
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-4 border-t">
                   <button
@@ -436,109 +572,254 @@ function Dashboard({ onNavigate }: DashboardProps) {
                     />
                   </div>
 
-                  <div className="border-t pt-6 mt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="text-lg font-medium text-gray-900">
-                        Módulos do Curso
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo de Contrato
                       </label>
-                      <button
-                        type="button"
-                        onClick={addModule}
-                        className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md text-sm font-medium text-blue-600 hover:bg-blue-50"
+                      <select
+                        value={formData.tipo_contrato}
+                        onChange={(e) => setFormData({ ...formData, tipo_contrato: e.target.value as FormData['tipo_contrato'] })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                       >
-                        + Adicionar Módulo
-                      </button>
+                        <option value="CLT">CLT</option>
+                        <option value="PJ">PJ</option>
+                        <option value="Estágio">Estágio</option>
+                        <option value="Temporário">Temporário</option>
+                      </select>
                     </div>
 
-                    <div className="space-y-6">
-                      {formData.modules.map((module, moduleIndex) => (
-                        <div
-                          key={moduleIndex}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Modalidade
+                      </label>
+                      <select
+                        value={formData.modalidade}
+                        onChange={(e) => setFormData({ ...formData, modalidade: e.target.value as FormData['modalidade'] })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Presencial">Presencial</option>
+                        <option value="Remoto">Remoto</option>
+                        <option value="Híbrido">Híbrido</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Habilidades Necessárias
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite uma habilidade e pressione Enter"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.target as HTMLInputElement;
+                          const value = input.value.trim();
+                          if (value && !formData.skills.includes(value)) {
+                            setFormData({
+                              ...formData,
+                              skills: [...formData.skills, value]
+                            });
+                            input.value = '';
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formData.skills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                         >
-                          <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Título do Módulo {moduleIndex + 1}
-                            </label>
-                            <input
-                              type="text"
-                              value={module.title}
-                              onChange={(e) => updateModule(moduleIndex, e.target.value)}
-                              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                              placeholder="Ex: Introdução ao Curso"
-                            />
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium text-gray-700">
-                                Vídeos do Módulo
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => addVideo(moduleIndex)}
-                                className="text-sm text-blue-600 hover:text-blue-700"
-                              >
-                                + Adicionar Vídeo
-                              </button>
-                            </div>
-
-                            {module.videos.map((video, videoIndex) => (
-                              <div
-                                key={`${moduleIndex}-${videoIndex}`}
-                                className="bg-white p-4 rounded-lg border border-gray-200 space-y-3"
-                              >
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    Título do Vídeo
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={video.title}
-                                    onChange={(e) => updateVideo(moduleIndex, videoIndex, 'title', e.target.value)}
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Ex: Introdução ao Módulo"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    Duração
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={video.duration}
-                                    onChange={(e) => updateVideo(moduleIndex, videoIndex, 'duration', e.target.value)}
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Ex: 10:00"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    Vídeo
-                                  </label>
-                                  <input
-                                    type="file"
-                                    accept="video/*"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) updateVideo(moduleIndex, videoIndex, 'file', file);
-                                    }}
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                  />
-                                  {video.file && (
-                                    <p className="mt-1 text-sm text-gray-500">
-                                      Arquivo selecionado: {video.file.name}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                skills: formData.skills.filter((_, i) => i !== index)
+                              });
+                            }}
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Benefícios
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite um benefício e pressione Enter"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.target as HTMLInputElement;
+                          const value = input.value.trim();
+                          if (value && !formData.beneficios.includes(value)) {
+                            setFormData({
+                              ...formData,
+                              beneficios: [...formData.beneficios, value]
+                            });
+                            input.value = '';
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formData.beneficios.map((beneficio, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                        >
+                          {beneficio}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                beneficios: formData.beneficios.filter((_, i) => i !== index)
+                              });
+                            }}
+                            className="ml-2 text-green-600 hover:text-green-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cidade
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.cidade}
+                        onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                        placeholder="Ex: São Paulo"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.estado}
+                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                        placeholder="Ex: SP"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Módulos do Curso</h3>
+                    
+                    {formData.modules.map((module, moduleIndex) => (
+                      <div key={moduleIndex} className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Título do Módulo
+                          </label>
+                          <input
+                            type="text"
+                            value={module.title}
+                            onChange={(e) => {
+                              const newModules = [...formData.modules];
+                              newModules[moduleIndex].title = e.target.value;
+                              setFormData({ ...formData, modules: newModules });
+                            }}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-4">
+                          {module.videos.map((video, videoIndex) => (
+                            <div key={videoIndex} className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Título do Vídeo
+                                </label>
+                                <input
+                                  type="text"
+                                  value={video.title}
+                                  onChange={(e) => {
+                                    const newModules = [...formData.modules];
+                                    newModules[moduleIndex].videos[videoIndex].title = e.target.value;
+                                    setFormData({ ...formData, modules: newModules });
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Duração
+                                </label>
+                                <input
+                                  type="text"
+                                  value={video.duration}
+                                  onChange={(e) => {
+                                    const newModules = [...formData.modules];
+                                    newModules[moduleIndex].videos[videoIndex].duration = e.target.value;
+                                    setFormData({ ...formData, modules: newModules });
+                                  }}
+                                  placeholder="Ex: 10:00"
+                                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">
+                                  Vídeo
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="video/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const newModules = [...formData.modules];
+                                      newModules[moduleIndex].videos[videoIndex].file = file;
+                                      setFormData({ ...formData, modules: newModules });
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => handleAddVideo(moduleIndex)}
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            + Adicionar Vídeo
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={handleAddModule}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      + Adicionar Módulo
+                    </button>
                   </div>
 
                   <div className="flex justify-end space-x-3">
@@ -705,47 +986,116 @@ function Dashboard({ onNavigate }: DashboardProps) {
                     </div>
                   </div>
 
-                  <div className="border-t pt-6 mt-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Endereço</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
-                        <input
-                          type="text"
-                          value={editForm?.cep || ''}
-                          onChange={(e) => setEditForm({ ...editForm, cep: e.target.value })}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="00000-000"
-                        />
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Endereço</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-1">
+                        <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">
+                          CEP
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            id="cep"
+                            name="cep"
+                            type="text"
+                            placeholder="00000-000"
+                            value={editForm?.cep || ''}
+                            onChange={handleCepChange}
+                            maxLength={9}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={buscarCep}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+                          >
+                            Buscar
+                          </button>
+                        </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                        <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">
+                          Número
+                        </label>
                         <input
+                          id="numero"
+                          name="numero"
                           type="text"
                           value={editForm?.numero || ''}
-                          onChange={(e) => setEditForm({ ...editForm, numero: e.target.value })}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, numero: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+                        <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                          Complemento
+                        </label>
                         <input
+                          id="complemento"
+                          name="complemento"
                           type="text"
-                          value={editForm?.bairro || ''}
-                          onChange={(e) => setEditForm({ ...editForm, bairro: e.target.value })}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          value={editForm?.complemento || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, complemento: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                         />
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Logradouro</label>
+                        <label htmlFor="logradouro" className="block text-sm font-medium text-gray-700 mb-1">
+                          Logradouro
+                        </label>
                         <input
+                          id="logradouro"
+                          name="logradouro"
                           type="text"
                           value={editForm?.logradouro || ''}
-                          onChange={(e) => setEditForm({ ...editForm, logradouro: e.target.value })}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, logradouro: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">
+                          Bairro
+                        </label>
+                        <input
+                          id="bairro"
+                          name="bairro"
+                          type="text"
+                          value={editForm?.bairro || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, bairro: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">
+                          Cidade
+                        </label>
+                        <input
+                          id="cidade"
+                          name="cidade"
+                          type="text"
+                          value={editForm?.cidade || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, cidade: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">
+                          Estado
+                        </label>
+                        <input
+                          id="estado"
+                          name="estado"
+                          type="text"
+                          value={editForm?.estado || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev!, estado: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                         />
                       </div>
                     </div>
