@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PencilIcon, MapPinIcon, PhoneIcon, MailIcon, BriefcaseIcon, BookOpenIcon, LogOutIcon, PlayIcon, StarIcon, GlobeIcon, HeartIcon } from 'lucide-react';
 import { Course } from './Courses';
-const tutorialVideo = '../components/video/Video.mp4';
+import tutorialVideo from '../components/video/Video.mp4';
 
 type UserData = {
   id: string;
@@ -27,6 +27,14 @@ type UserData = {
   competencias?: string[];
   idiomas?: string[];
   interesses?: string[];
+  profileImage?: string;
+};
+
+type Course = {
+  id: number;
+  title: string;
+  instructor?: string;
+  company?: string;
 };
 
 const VideoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -42,17 +50,17 @@ const VideoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
             className="absolute top-8 right-8 text-gray-500 hover:text-gray-700 z-[60]"
           >
             <span className="sr-only">Fechar</span>
-            <svg 
+            <svg
               className="h-8 w-8 bg-white rounded-full p-1.5"
-              fill="none" 
-              viewBox="0 0 24 24" 
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M6 18L18 6M6 6l12 12" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
           </button>
@@ -65,7 +73,7 @@ const VideoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
               controlsList="nodownload"
               onContextMenu={(e) => e.preventDefault()}
             >
-              <source src={`https://user-images.githubusercontent.com/LuizEduardo20/JobFlow/raw/main/${tutorialVideo}` type="video/mp4" />
+              <source src={tutorialVideo} type="video/mp4" />
               Seu navegador não suporta a tag de vídeo.
             </video>
           </div>
@@ -83,6 +91,7 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [skillInput, setSkillInput] = useState('');
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isImageMenuOpen, setIsImageMenuOpen] = useState(false);
 
   useEffect(() => {
     const isUserLoggedIn = localStorage.getItem('isUserLoggedIn');
@@ -160,10 +169,123 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
   };
 
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const formattedCep = value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .substring(0, 9)
+
+    setEditForm(prev => ({ ...prev!, cep: formattedCep }))
+  }
+
+  const buscarCep = async () => {
+    if (editForm?.cep) {
+      try {
+        const cepLimpo = editForm.cep.replace(/\D/g, '')
+        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+        const data = await response.json()
+
+        if (!data.erro) {
+          setEditForm(prev => ({
+            ...prev!,
+            logradouro: data.logradouro,
+            bairro: data.bairro,
+            cidade: data.localidade,
+            estado: data.uf
+          }))
+        } else {
+          alert('CEP não encontrado')
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error)
+        alert('Erro ao buscar CEP')
+      }
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione apenas arquivos de imagem.');
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('A imagem deve ter no máximo 2MB.');
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        
+        const stringSize = new Blob([base64String]).size;
+        if (stringSize > 5 * 1024 * 1024) {
+          alert('A imagem é muito grande para ser armazenada.');
+          return;
+        }
+
+        setUserData(prev => ({ ...prev!, profileImage: base64String }));
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const updatedUser = { ...currentUser, profileImage: base64String };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        const updatedUsers = registeredUsers.map((user: any) => 
+          user.id === currentUser.id ? updatedUser : user
+        );
+        localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
+      };
+
+      reader.onerror = () => {
+        alert('Erro ao ler o arquivo.');
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      alert('Erro ao processar a imagem.');
+    }
   };
 
-  const buscarCep = () => {
+  const handleRemoveImage = () => {
+    try {
+      setUserData(prev => ({ ...prev!, profileImage: undefined }));
+      
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      const updatedUser = { ...currentUser, profileImage: undefined };
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      const updatedUsers = registeredUsers.map((user: any) => 
+        user.id === currentUser.id ? updatedUser : user
+      );
+      localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error('Erro ao remover a imagem:', error);
+      alert('Erro ao remover a imagem.');
+    }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.image-menu')) {
+        setIsImageMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex-1 bg-gray-50 min-h-screen py-4 sm:py-8">
@@ -173,10 +295,94 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
           <div className="relative px-4 sm:px-6 pb-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
               <div className="-mt-12 mb-4 sm:mb-0">
-                <div className="inline-block h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-4 ring-white bg-gray-200 flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl text-gray-600">
-                    {userData?.name?.charAt(0)?.toUpperCase()}
-                  </span>
+                <div className="flex items-end">
+                  <div className="relative w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {userData?.profileImage ? (
+                      <img
+                        src={userData.profileImage}
+                        alt={`Foto de perfil de ${userData?.name}`}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <span className="text-2xl sm:text-3xl text-gray-600">
+                        {userData?.name?.charAt(0)?.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="image-menu">
+                    <button
+                      onClick={() => setIsImageMenuOpen(!isImageMenuOpen)}
+                      className="p-1.5 bg-gray-500 hover:bg-gray-700 rounded-full transition-colors shadow-md"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-white"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                      </svg>
+                    </button>
+
+                    {isImageMenuOpen && (
+                      <div className="absolute mt-1 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                        <div className="py-1">
+                          <label className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                handleImageUpload(e);
+                                setIsImageMenuOpen(false);
+                              }}
+                            />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 mr-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Alterar foto
+                          </label>
+                          {userData?.profileImage && (
+                            <button
+                              onClick={() => {
+                                handleRemoveImage();
+                                setIsImageMenuOpen(false);
+                              }}
+                              className="flex w-full items-center px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 mr-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                              Remover foto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto mt-4 sm:mt-6">
@@ -225,48 +431,49 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
                       </p>
                     )}
                   </div>
-                </div>
-
-                {(userData?.bio || (userData?.skills && userData.skills.length > 0)) && (
-                  <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-                    {userData.bio && (
-                      <div className="mb-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-3">Sobre mim</h2>
-                        <p className="text-gray-600 whitespace-pre-line">{userData.bio}</p>
-                      </div>
+                  <h2 className="text-lg font-bold text-gray-900 mb-3">Endereço</h2>
+                  <div className="space-y-2">
+                    <p className="flex items-center text-gray-600">
+                      <MapPinIcon className="h-4 w-4 mr-2" />
+                      {`${userData.bairro}, ${userData.cidade} - ${userData.estado}`}
+                    </p>
+                    {userData.bairro && (
+                      <p className="flex items-center text-gray-600">
+                        <MapPinIcon className="h-4 w-4 mr-2" />
+                        {`${userData.logradouro}${userData.numero ? `, ${userData.numero}` : ''}`}
+                      </p>
                     )}
-                    {userData.skills && userData.skills.length > 0 && (
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-3">Habilidades</h2>
-                        <div className="flex flex-wrap gap-2">
-                          {userData.skills.map((skill, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                        {userData.logradouro && (
-                          <div className="mt-4">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-3">Endereço</h2>
-                            <div className="space-y-2">
-                              <p className="flex items-center text-gray-600">
-                                <MapPinIcon className="h-4 w-4 mr-2" />
-                                {`${userData.logradouro}${userData.numero ? `, ${userData.numero}` : ''}`}
-                              </p>
-                              {userData.bairro && (
-                                <p className="flex items-center text-gray-600 ml-6">
-                                  {`${userData.bairro}, ${userData.cidade} - ${userData.estado}`}
-                                </p>
-                              )}
-                              {userData.cep && (
-                                <p className="flex items-center text-gray-600 ml-6">
-                                  CEP: {userData.cep}
-                                </p>
-                              )}
+                    {userData.cep && (
+                      <p className="flex items-center text-gray-600">
+                        <MapPinIcon className="h-4 w-4 mr-2" />
+                        CEP: {userData.cep}
+                      </p>
+                    )}
+                  </div>
 
+                  {(userData?.bio || (userData?.skills && userData.skills.length > 0)) && (
+                    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                      {userData.bio && (
+                        <div className="mb-6">
+                          <h2 className="text-lg font-semibold text-gray-900 mb-3">Sobre mim</h2>
+                          <p className="text-gray-600 whitespace-pre-line">{userData.bio}</p>
+                        </div>
+                      )}
+                      {userData.skills && userData.skills.length > 0 && (
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900 mb-3">Habilidades</h2>
+                          <div className="flex flex-wrap gap-2">
+                            {userData.skills.map((skill, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                          {userData.logradouro && (
+                            <div className="mt-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                   {userData.formacao && userData.formacao.length > 0 && (
@@ -356,21 +563,30 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <BriefcaseIcon className="h-5 w-5 mr-2 text-gray-500" />
-                    Minhas Candidaturas
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <BriefcaseIcon className="h-5 w-5 mr-2 text-gray-500" />
+                      Minhas Candidaturas
+                    </h2>
+                    <button
+                      onClick={() => onNavigate('jobscontent')}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      Ver todas as candidaturas
+                    </button>
+                  </div>
+
                   {applications.length > 0 ? (
                     <div className="space-y-3">
-                      {applications.map((company, index) => (
+                      {applications.slice(0, 3).map((company, index) => (
                         <div
                           key={index}
                           className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-100"
@@ -386,16 +602,7 @@ function CandidateProfile({ onNavigate }: { onNavigate: (page: string) => void }
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <BriefcaseIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                      <p>Você ainda não se candidatou para nenhuma vaga.</p>
-                      <button
-                        onClick={() => onNavigate('jobs')}
-                        className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Ver vagas disponíveis
-                      </button>
-                    </div>
+                    <p className="text-gray-500 text-center py-4">Nenhuma candidatura encontrada</p>
                   )}
                 </div>
 
