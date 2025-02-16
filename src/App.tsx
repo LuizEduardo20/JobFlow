@@ -14,12 +14,14 @@ import MyCourses from './pages/MyCourses';
 import LoginCompany from './pages/LoginCompany';
 import RegisterCompany from './pages/RegisterCompany';
 import CourseContent from './pages/CourseContent';
+import JobsContent from './pages/JobsContent';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [appliedJobs, setAppliedJobs] = useState<any[]>([]);
 
   useEffect(() => {
     const userLoggedIn = localStorage.getItem('isUserLoggedIn');
@@ -36,6 +38,10 @@ function App() {
     setCurrentPage(page);
   };
 
+  const handleJobApplication = (job: any) => {
+    setAppliedJobs(prev => [...prev, job]);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
@@ -45,7 +51,8 @@ function App() {
           <JobDetails 
             job={selectedJob} 
             onBack={() => setSelectedJob(null)} 
-            onNavigate={handleNavigate} 
+            onNavigate={handleNavigate}
+            onApply={handleJobApplication}
           />
         ) : (
           <Jobs 
@@ -82,6 +89,12 @@ function App() {
         return <LoginCompany onNavigate={handleNavigate} />;
       case 'registerCompany':
         return <RegisterCompany onNavigate={handleNavigate} />;
+      case 'jobscontent':
+        return <JobsContent 
+          onBack={() => handleNavigate('jobs')} 
+          onNavigate={handleNavigate}
+          appliedJobs={appliedJobs}
+        />;
       default:
         return <Home onNavigate={handleNavigate} />;
     }
